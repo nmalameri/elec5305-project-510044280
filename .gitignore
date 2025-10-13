@@ -1,0 +1,55 @@
+cd "$HOME/Documents/GitHub/elec5305-project-510044280"
+
+rm -f .gitignore
+cat > .gitignore << 'EOF'
+# macOS junk
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Editors/IDEs
+.vscode/
+.idea/
+
+# Project outputs (large)
+results/
+figs/
+data/
+datasets/
+logs/
+checkpoints/
+models/
+**/*.npy
+**/*.npz
+**/*.pt
+**/*.joblib
+**/*.pkl
+**/*.ckpt
+**/*.wav
+**/*.flac
+**/*.png
+**/*.pdf
+
+# Keep these tracked even if inside ignored dirs (adjust as you like)
+!configs/**
+!tools/**
+!figs/*.tex
+!README.md
+!LICENSE
+EOF
+
+# Apply new rules to already tracked files:
+git rm -r --cached .
+git add .
+git commit -m "Refresh .gitignore and untrack large/generated files"
