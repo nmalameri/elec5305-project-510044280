@@ -1,10 +1,25 @@
-#!/usr/bin/env python3
 """
-Build protocol-driven manifests for ASVspoof2019 LA.
+02_build_manifest.py
 
-Outputs (per split):
-- results/manifests/<split>.csv        (utt_id,label,system_id,attack_id,path)
-- results/manifests/<split>.lock.json  (protocol path + SHA256)
+Purpose:
+    To build CSV manifest files (train/dev/eval) based on ASVspoof protocol files
+    Each manifest row includes:
+      - utt_id
+      - label (bona fide / spoof)
+      - attack/system ID
+      - absolute audio path
+
+Inputs:
+    ASVspoof 2019 protocol files
+    configs/paths.yaml
+
+Outputs:
+    results/manifests/train.csv
+    results/manifests/dev.csv
+    results/manifests/eval.csv
+
+Notes:
+    These manifests are the foundation for all later stages.
 """
 
 from __future__ import annotations
@@ -14,7 +29,6 @@ from collections import Counter
 
 import yaml
 
-# Accept LA_* with optional -N and optional .flac (case-insensitive)
 LA_UTT_RE = re.compile(r"^(LA_[A-Z]_\d{7})(?:-\d+)?(?:\.flac)?$", re.IGNORECASE)
 
 def sha256_of(path: Path) -> str:
@@ -37,10 +51,10 @@ def load_cfg(cfg_path: Path) -> dict:
 def read_cm_protocol_lines(p: Path):
     """
     README format: SPEAKER_ID  AUDIO_FILE_NAME  -  SYSTEM_ID  KEY
-    Extract:
+    Extracts:
       utt_id   := AUDIO_FILE_NAME (normalized, ext stripped)
       system_id:= 'Axx' or '-' (bonafide)
-      label    := 'bonafide' | 'spoof' (eval may hide in some releases; your copy has them)
+      label    := 'bonafide' | 'spoof' 
     """
     rows = []
     with p.open() as f:
@@ -138,7 +152,7 @@ def main():
         print(f"  audio dir: {res['audio_dir']}")
         print(f"  rows: {res['n_manifest']}  labels: {res['label_counts']}")
 
-        # write CSV manifest
+        # writing the CSV manifest
         csv_path = out_root / f"{split}.csv"
         with csv_path.open("w", newline="") as f:
             w = csv.writer(f)
@@ -146,7 +160,7 @@ def main():
             for r in res["rows"]:
                 w.writerow([r["utt_id"], r["label"], r["attack_id"], r["path"]])
 
-        # write protocol lock
+        # writing the protocol lock
         lock_path = out_root / f"{split}.lock.json"
         with lock_path.open("w") as f:
             json.dump({

@@ -1,6 +1,32 @@
-#!/usr/bin/env python3
-# trains a tiny 2D-CNN on LFCC/MFCC with clean logs, reproducible artifacts,
-# and robust handling of corrupt/truncated feature files.
+"""
+07_cnn_baseline.py
+
+Purpose:
+    To train and evaluate a compact 2D CNN on cepstral time-frequency maps.
+
+Functionality:
+    - Loading features from Step 04 (04_extract_features.py)
+    - Preparing [1, T, D] CNN inputs with cropping/padding
+    - Defining the lightweight CNN architecture (Conv-BN-ReLU blocks)
+    - Training with weighted BCE loss (for class imbalance)
+    - Evaluating on DEV and EVAL
+    - Saving weights, metrics, ROC, scores, per-attack tables
+
+Inputs:
+    results/features/<feat_type>/*
+
+Outputs:
+    results/models/cnn_<feat>/<run_tag>/
+        model.pt
+        run_config.json
+        metrics.json
+        scores & ROC
+        per-attack tables
+
+Notes:
+    Explicitly designed to be CPU/MPS friendly while still learning useful representations.
+"""
+
 from __future__ import annotations
 from pathlib import Path
 import os, sys, time, json, csv, math, shutil, warnings, re
@@ -20,15 +46,15 @@ from tqdm import tqdm
 # -----------------------------
 FEATURE = "mfcc"           # "lfcc" or "mfcc"
 T_CROP = 400               # frames per crop (≈4s if 10ms hop)
-EPOCHS = 15                # set to 2 for a quick smoke test
+EPOCHS = 15                # set to 2 for a quick test
 BATCH_SIZE = 32
 LR = 2e-3
 WEIGHT_DECAY = 1e-4
 PRINT_BATCHES = 0          # e.g., 100 to see per-batch running loss, 0 = off
 
-# Make CNN training comparable to your GMM run:
-MAX_SPOOF_UTTS = 6000      # cap spoof utterances on train
-BALANCE_ATTACKS = True     # distribute spoof cap evenly over attacks (A01..A06)
+# to make CNN training comparable to your GMM run:
+MAX_SPOOF_UTTS = 6000      # caps spoof utterances on train
+BALANCE_ATTACKS = True     # distributes spoof cap evenly over attacks (A01..A06)
 SEED = 42
 
 # -----------------------------
@@ -76,9 +102,9 @@ def feature_paths(root: Path, feat: str, split: str):
 # --- safe feature open ---
 def _probe_feat_header(path: Path) -> tuple[bool, tuple|None]:
     """
-    Fast, safe probe:
+    fast, safe probe:
       - returns (ok, (T,D)) for .npy where possible
-      - returns (ok, None) for .npz (we'll do a tiny read)
+      - returns (ok, None) for .npz (do tiny read)
     """
     try:
         if path.suffix == ".npy":
@@ -134,7 +160,7 @@ class FrameCropDataset(Dataset):
     Returns (X, y, utt_id) where:
       X: [1, T, D] (time, feat-dim)
       y: 0=bonafide, 1=spoof
-    Train uses random crop; Dev/Eval uses center crop. One crop per sample.
+    Training uses random crop; Dev/Eval uses center crop. One crop per sample.
     Assumes ids were pre-filtered to only include good feature files.
     """
     def __init__(self, rows, fpaths, scaler: StandardScaler, T=400, train=False):
@@ -299,10 +325,10 @@ def write_skipped(run_dir: Path, name: str, bad_list):
             f.write(f"{u}\t{why}\n")
 
 # -----------------------------
-# Per-attack helpers (FIXED)
+# Per-attack helpers
 # -----------------------------
 def per_attack_eer_eval(eval_utts, eval_scores, eval_y, utt2attack):
-    # build indices
+    # building indices
     all_idx_bona = [i for i,y in enumerate(eval_y) if y==0]
     attack_to_spoof_idx = defaultdict(list)
     for i,u in enumerate(eval_utts):
@@ -316,7 +342,7 @@ def per_attack_eer_eval(eval_utts, eval_scores, eval_y, utt2attack):
         s = np.asarray(eval_scores[idx], dtype=np.float32)
         n_b = int((y==0).sum()); n_s = int((y==1).sum())
         if n_b > 0 and n_s > 0 and len(y) > 1:
-            ee, _, _ = eer(s, y)     # <-- FIX: unpack 3-tuple, take first
+            ee, _, _ = eer(s, y)     # unpack 3-tuple, take first (was having trouble with this at first)
             rows.append([aid, len(idx), n_b, n_s, round(100*ee,2)])
     return rows
 
@@ -363,7 +389,7 @@ def main():
         print(f"[ERROR] no features at {feat_root/FEATURE/'train'}")
         sys.exit(1)
 
-    # Subsample spoof utterances for train
+    # subsample spoof utterances for train
     train_b = [r for r in train_rows if r["label"].lower()=="bonafide"]
     train_s_full = [r for r in train_rows if r["label"].lower()=="spoof"]
     if MAX_SPOOF_UTTS and len(train_s_full) > MAX_SPOOF_UTTS:
@@ -423,7 +449,7 @@ def main():
     print(f"[loss] BCEWithLogitsLoss pos_weight={pos_weight.item():.3f}  "
           f"(bona:{len(train_b_good)}, spoof:{len(train_s_good)})")
 
-    # save config & scaler
+    # saving config & scaler
     (run_dir/"run_config.json").write_text(json.dumps({
         "feature": FEATURE, "T_crop": T_CROP, "epochs": EPOCHS, "batch_size": BATCH_SIZE,
         "lr": LR, "weight_decay": WEIGHT_DECAY,
@@ -483,7 +509,7 @@ def main():
         star = ""
         if d_eer < best["eer"]:
             best.update({"eer": d_eer, "thr": d_thr, "epoch": ep})
-            star = "  ⭐ best"
+            star = "  ⭐ best" # star emoji to make it apparent
             # checkpoint best
             torch.save(model.state_dict(), run_dir/"model.pt")
             torch.save(optim.state_dict(), run_dir/"optim.pt")
@@ -511,7 +537,7 @@ def main():
         for u,s,l in zip(eval_utts, eval_scores, eval_y):
             w.writerow([u, float(s), int(l)])
 
-    # DEV EER/THR (best) — reload stored dev scores for exactness
+    # DEV EER/THR (best), reload stored dev scores for exactness
     dev_rows=[]
     with (run_dir/"scores_dev.csv").open() as f:
         r = csv.DictReader(f)
@@ -547,7 +573,7 @@ def main():
     print(f"[save] {op_json}")
     print(f"[eval] EER={e_eer*100:.2f}%  ACC={ev_acc*100:.2f}%  TPR={ev_tpr*100:.2f}%  FPR={ev_fpr*100:.2f}%  (at DEV thr)")
 
-    # Per-attack analysis
+    # per-attack analysis
     mrows=[]
     with (Path("results/manifests")/"eval.csv").open() as f:
         r = csv.DictReader(f)

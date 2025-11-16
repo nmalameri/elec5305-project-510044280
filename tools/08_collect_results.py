@@ -1,8 +1,31 @@
-#!/usr/bin/env python3
+"""
+08_collect_results.py
+
+Purpose:
+    To collect headline results (EER, ACC, thresholds, etc.) from multiple runs
+    and combine them into unified summary tables.
+
+Functionality:
+    - Loading metrics.json and per-attack tables from different models
+    - Merging DEV/EVAL EER values
+    - Producing summary CSV
+    - Creating comparison-ready output for reports
+
+Inputs:
+    Paths to selected run directories (modify inside script if neccessary)
+
+Outputs:
+    results/summary/headline.csv
+    results/summary/per_attack_eer_eval_merged.csv
+    results/summary/*.tex
+
+Notes:
+    This file is the “summary generator” for final results.
+"""
+
 from pathlib import Path
 import json, csv, shutil
 
-# === EDIT THESE to the run directories you want in the paper ===
 RUNS = {
     "LFCC+GMM":  "results/models/gmm_lfcc/K64_cap100_S6000_F800000_20251013-1226",
     "MFCC+GMM":  "results/models/gmm_mfcc/K64_cap100_S6000_F800000_20251013-1237",
@@ -68,7 +91,7 @@ with (OUTDIR/"headline.tex").open("w") as f:
 print(f"[save] {OUTDIR/'headline.tex'}")
 
 # --- Per-attack EER (side-by-side merge) ---
-# read each per_attack_eer_eval.csv into dict: attack_id -> eer
+# reading each per_attack_eer_eval.csv into dict: attack_id -> eer
 attacks = set()
 per_attack = {}
 for name, path in RUNS.items():
@@ -98,7 +121,7 @@ with (OUTDIR/"per_attack_eer_eval.md").open("w") as f:
         f.write("| "+aid+" | "+" | ".join(vals)+" |\n")
 print(f"[save] {OUTDIR/'per_attack_eer_eval.md'}")
 
-# --- Copy ROCs into figs/ (if you’ve rendered PNGs already) ---
+# --- Copy ROCs into figs/ (if PNGs are rendered already) ---
 for name, path in RUNS.items():
     if not path: continue
     rd = Path(path)

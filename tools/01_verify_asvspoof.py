@@ -1,4 +1,23 @@
-#!/usr/bin/env python3
+"""
+01_verify_asvspoof.py
+
+Purpose:
+    To verify that the ASVspoof 2019 LA dataset is correctly installed and configured in configs/paths.yaml
+    This script checks:
+      - all protocol files exist
+      - all audio paths listed in the protocols exist
+      - formats and directory structures are valid
+
+Inputs:
+    configs/paths.yaml  (points to dataset root)
+
+Outputs:
+    Printed summary of dataset status (missing files, errors, sample checks)
+
+Notes:
+    This script does not modify any data; it only verifies the environment.
+"""
+
 from __future__ import annotations
 import argparse
 import random
@@ -13,7 +32,7 @@ try:
 except Exception:
     sf = None
 
-# Accept LA_[DTI]_####### with optional "-N" and optional ".flac" (case-insensitive)
+# accepting LA_[DTI]_####### with optional "-N" and optional ".flac" (case-insensitive)
 LA_UTT_RE = re.compile(r"^(LA_[DTE]_\d{7})(?:-\d+)?(?:\.flac)?$", re.IGNORECASE)
 
 def norm_utt(token: str) -> str:
@@ -51,7 +70,7 @@ def read_cm_protocol_lines(p: Path):
                 continue
             toks = ln.split()
 
-            # find utt token by regex (robust to columns)
+            # finding utt token by regex (robust to columns)
             utt_idx, utt = None, None
             for i, t in enumerate(toks):
                 if LA_UTT_RE.match(t):
@@ -60,14 +79,14 @@ def read_cm_protocol_lines(p: Path):
 
             system_id, attack_id, label = None, None, None
             if utt_idx is not None:
-                # Canonical layout after utt: '-' SYSTEM_ID KEY
+                # canonical layout after utt: '-' SYSTEM_ID KEY
                 post = toks[utt_idx + 1:]
-                # Find a '-' and then take next as system, last as key
+                # finding a '-' and then take next as system, last as key
                 if post:
                     # system id in LA is typically 'A01'..'A19' or '-' (bonafide)
                     # attack_id isn't a separate column in LA cm readme; many papers refer to SYSTEM_ID as attack ID.
-                    # We'll treat system_id as the attack code (Axx).
-                    # Try canonical positions:
+                    # I'll treat system_id as the attack code (Axx).
+                    # trying canonical positions:
                     if len(post) >= 3 and post[0] == "-":
                         system_id = post[1].upper()
                         label = post[2].lower()
@@ -80,11 +99,11 @@ def read_cm_protocol_lines(p: Path):
                                 break
                         label = post[-1].lower() if post else None
 
-                    # attack_id equals Axx for LA; keep both keys for convenience
+                    # attack_id equals Axx for LA; keeping both keys for convenience
                     if system_id and system_id.upper().startswith("A") and system_id[1:].isdigit():
                         attack_id = system_id.upper()
 
-            # sanitize label
+            # sanitizing the label
             if label not in {"bonafide", "spoof"}:
                 label = None
 
@@ -203,7 +222,7 @@ def main():
         if res["extra_audio_examples"]:
             print(f"    e.g. {res['extra_audio_examples']}")
         if res["system_counts"]:
-            # show top 10 by count
+            # showing top 10 by count for verification
             top_sys = sorted(res["system_counts"].items(), key=lambda x: -x[1])[:10]
             print(f"  spoof by system (top): {top_sys}")
         if res["problems"]:

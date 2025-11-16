@@ -1,5 +1,34 @@
-#!/usr/bin/env python3
-# tools/05_gmm.py — Baseline GMMs (LFCC/MFCC) with versioned run dirs, clear logging, and robust saves.
+"""
+05_gmm.py
+
+Purpose:
+    To train and evaluate two diagonal-covariance GMMs (bona fide vs spoof)
+    using LFCC or MFCC features.
+
+Functionality:
+    - Loading features from Step 04 (04_extract_features.py)
+    - Balanced attack sampling and frame caps
+    - Training GMMs with EM algorithm
+    - Scoring utterances using mean log-likelihood ratio
+    - Computing EER on DEV and EVAL
+    - Saving metrics, scores, ROC samples, and per-attack tables
+
+Inputs:
+    results/features/<feat_type>/*
+    Command-line args: feat type, output directory
+
+Outputs:
+    results/models/gmm_<feat>/<run_tag>/
+        run_config.json
+        metrics.json
+        scores_{dev,eval}.csv
+        roc_{dev,eval}.csv
+        per_attack tables
+
+Notes:
+    This script produces a fully reproducible GMM baseline.
+"""
+
 
 from pathlib import Path
 import csv, json, re, shutil, time, warnings, argparse
@@ -19,10 +48,10 @@ from collections import Counter
 SEED = 42
 np.random.seed(SEED)
 
-DEFAULT_NCOMP = 64          # 128 for fuller baseline; 64 is M1-friendly
+DEFAULT_NCOMP = 64          # 128 if you want a fuller baseline; 64 is more M1-friendly which I was using
 DEFAULT_CAP_FRAMES = 100    # frames per utterance (train pooling)
-MAX_SPOOF_UTTS = 6000       # subsample spoof utterances to bound RAM
-MAX_SPOOF_FRAMES = 800_000  # global frame cap (spoof) before fitting
+MAX_SPOOF_UTTS = 6000       # subsample spoof utterances to bound RAM (6000 is chosen based on experiments and computational capacity)
+MAX_SPOOF_FRAMES = 800_000  # global frame cap (spoof) before fitting (computational capacity related as well)
 
 EM_MAX_ITER = 120
 EM_TOL = 3e-3
@@ -47,7 +76,7 @@ def free_bytes(p: Path):
     except: return 0
 
 def find_feature_root():
-    # Prefer the largest existing location automatically
+    # prefers the largest existing location automatically
     cands=[Path("results/features"), Path.home()/ "asv_features"]
     vol=Path("/Volumes")
     if vol.exists():
@@ -74,7 +103,7 @@ def load_feat(p: Path):
 def lbl_int(lbl:str): return 0 if lbl.strip().lower()=="bonafide" else 1  # 0=bona,1=spoof
 
 def pool_frames(rows, fpaths, scaler, cap=DEFAULT_CAP_FRAMES, rng=np.random.default_rng(SEED)):
-    """Collect up to 'cap' frames per utterance; return (X, y_framewise)."""
+    """Collecting up to 'cap' frames per utterance; return (X, y_framewise)."""
     feats=[]; labs=[]
     for r in tqdm(rows, desc="pool", unit="utt"):
         u=r["utt_id"]
@@ -121,7 +150,7 @@ def write_roc(dirp: Path, split, fpr,tpr,thr):
 
 # ---------- sanity / robust EM ----------
 def sanitize_for_gmm(X: np.ndarray, name: str):
-    """Keep finite rows and cast to float64 for stable GMM fitting (CPU)."""
+    """Keeping finite rows and cast to float64 for stable GMM fitting (CPU)."""
     if X.size == 0: return X.astype(np.float64, copy=False)
     mask = np.isfinite(X).all(axis=1)
     removed = int((~mask).sum())
@@ -136,7 +165,7 @@ def warn_zero_variance(X: np.ndarray, name: str):
     if zeros: print(f"[warn] {name}: {zeros} dims have zero variance; reg_covar will handle them")
 
 def fit_gmm_safely(X, seed, feat_tag, label_tag, n_comp):
-    """Fit a GMM (CPU) with labeled prints + retries on reg_covar/K."""
+    """Fitting a GMM (CPU) with labeled prints + retries on reg_covar/K."""
     for reg_try in EM_RETRY_REGS:
         for k_try in (n_comp, max(2, n_comp // 2)):
             try:
@@ -177,7 +206,7 @@ def fit_gmm_safely(X, seed, feat_tag, label_tag, n_comp):
 
 # ---------- run directory mgmt ----------
 def make_run_dir(base_dir: Path, feat: str, n_comp: int, cap: int, tag: str|None):
-    """Create a unique run dir under results/models/gmm_<feat>/<run_tag> and update 'latest' symlink."""
+    """Creating a unique run dir under results/models/gmm_<feat>/<run_tag> and update 'latest' symlink."""
     base_dir.mkdir(parents=True, exist_ok=True)
     if not tag or not tag.strip():
         ts = datetime.now().strftime("%Y%m%d-%H%M")

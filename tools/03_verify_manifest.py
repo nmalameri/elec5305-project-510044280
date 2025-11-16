@@ -1,10 +1,30 @@
-#!/usr/bin/env python3
+"""
+03_verify_manifest.py
+
+Purpose:
+    To validate the manifests created in Step 02 (02_build_manifest.py)
+    Checks include:
+      - all audio files exist
+      - label and attack IDs match protocol definition
+      - no missing or malformed entries
+
+Inputs:
+    results/manifests/*.csv
+
+Outputs:
+    Terminal output confirming validity or listing problems.
+
+Notes:
+    This is a safety script to ensure downstream steps do not break or produce unexpected results.
+"""
+
+
 from __future__ import annotations
 import argparse, csv, json, re, sys, hashlib, random
 from pathlib import Path
 from collections import Counter
 
-# Optional audio probe
+# audio probe
 try:
     import soundfile as sf
 except Exception:
@@ -92,7 +112,7 @@ def verify_split(split: str, strict: bool, audio_check: int|None):
     issues = []
     rows, lock, mpath, lpath = load_manifest(split)
 
-    # 1) Lock file verification
+    # 1) Locking file verification
     protocol_path = Path(lock["protocol_file"])
     sha_cur = sha256_of(protocol_path) if protocol_path.exists() else None
     if not protocol_path.exists():
@@ -100,7 +120,7 @@ def verify_split(split: str, strict: bool, audio_check: int|None):
     elif sha_cur != lock.get("sha256"):
         issues.append(f"[{split}] protocol SHA mismatch: lock={lock.get('sha256')} cur={sha_cur}")
 
-    # 2) Reload protocol to cross-check
+    # 2) Reloading protocol to cross-check
     proto_map = parse_protocol(protocol_path) if protocol_path.exists() else {}
 
     # 3) Row-by-row checks
@@ -147,7 +167,7 @@ def verify_split(split: str, strict: bool, audio_check: int|None):
             issues.append(f"[{split}] duplicate path: {pth}")
         seen_utts.add(utt); seen_paths.add(str(pth))
 
-        # protocol agreement (if available)
+        # protocol agreement
         if proto_map:
             plab, patk = proto_map.get(utt, ("",""))
             if plab != lab or patk != atk:
@@ -162,7 +182,7 @@ def verify_split(split: str, strict: bool, audio_check: int|None):
         if len(proto_map) != len(rows):
             issues.append(f"[{split}] manifest row count {len(rows)} != protocol utts {len(proto_map)}")
 
-    # 5) optional audio spotcheck
+    # 5) audio spotcheck
     if audio_check and audio_check > 0 and sf is not None:
         probe = spotcheck_audio([Path(r["path"]) for r in rows], k=audio_check)
         if probe["ran"] and probe["errors"]:

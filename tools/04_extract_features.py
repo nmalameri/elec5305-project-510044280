@@ -1,20 +1,25 @@
-#!/usr/bin/env python3
 """
-04_extract_features.py  —  zero-argument, space-aware extractor
+04_extract_features.py
 
-- Reads YAML config (configs/paths.yaml)
-- Reads manifests: results/manifests/{train,dev,eval}.csv
-- Extracts BOTH LFCC and MFCC (from YAML params) by default
-- Saves compact: float16 + compressed .npz
-- Auto-selects an output root with enough free space:
-    1) results/features
-    2) ~/asv_features
-    3) /Volumes/*/asv_features  (macOS external drives)
-- Skips existing files; appends to index.csv incrementally
-- If disk fills mid-run, automatically falls back to the next location
+Purpose:
+    To extract cepstral features (LFCC and MFCC, including Δ and Δ²) for all 
+    train/dev/eval utterances in the ASVspoof 2019 LA dataset.
 
-Run:
-    python tools/04_extract_features.py
+Process:
+    - Loading each audio file
+    - Computing LFCC or MFCC according to project settings
+    - Computing deltas and delta-deltas
+    - Standardising using global train statistics
+    - Saving each feature sequence as a compressed .npz file
+
+Inputs:
+    results/manifests/*.csv
+
+Outputs:
+    results/features/<feat_type>/<split>/<utt_id>.npz
+
+Notes:
+    This step may take time; it supports resume/skip-if-exists behaviour.
 """
 
 from __future__ import annotations
@@ -27,7 +32,7 @@ import numpy as np
 import yaml
 from tqdm import tqdm
 
-# Audio IO + DSP
+# audio IO + DSP
 try:
     import soundfile as sf
 except Exception:
@@ -96,7 +101,7 @@ def ensure_dir(p: Path):
 
 def pick_out_root(need_bytes: int) -> Path:
     """
-    Choose an output root with >= need_bytes free.
+    Choosing an output root with >= need_bytes free.
     Order:
       1) results/features
       2) ~/asv_features
@@ -125,7 +130,7 @@ def pick_out_root(need_bytes: int) -> Path:
                 return c
         except Exception:
             continue
-    # Not enough anywhere; pick the one with the most free space
+    # Not enough anywhere; picks the one with the most free space
     return max(candidates, key=lambda p: (free_bytes(p) if p.exists() else -1))
 
 def approx_bytes_per_file(dims: int, frames_est: int, dtype_bytes: int = 2, compressed: bool = True) -> int:
@@ -277,18 +282,18 @@ def main():
     cfg = load_cfg(Path("configs/paths.yaml"))
     params = load_params(cfg)
 
-    # Defaults: both features, all splits, skip-existing true
+    # defaults: both features, all splits, skip-existing true
     features = ["lfcc", "mfcc"]
     splits   = ["train", "dev", "eval"]
     skip_existing = True
 
-    # Rough size planning (very conservative):
-    # Assume median ~600 frames/utt, dims ~60 (20 ceps * [1 or 3] depending on deltas; YAML uses deltas=true)
+    # rough size planning (very conservative):
+    # assumes median ~600 frames/utt, dims ~60 (20 ceps * [1 or 3] depending on deltas; YAML uses deltas=true)
     # float16 + compressed .npz ≈ ~50% of raw
     dims_guess = 60
     frames_guess = 600
     per_file = approx_bytes_per_file(dims_guess, frames_guess, dtype_bytes=2, compressed=True)
-    # Count total utterances from manifests we find
+    # counts total utterances from manifests found
     total_utts = 0
     for sp in splits:
         try:
@@ -297,7 +302,7 @@ def main():
             pass
     # for two features
     need_bytes = per_file * total_utts * len(features)
-    # add margin
+    # adds margin
     need_bytes = int(need_bytes * 1.3)
 
     out_root = pick_out_root(need_bytes)
@@ -346,7 +351,7 @@ def main():
                     n_err += 1
                     continue
                 wav_p = Path(r["path"])
-                out_base = split_dir / utt  # we will save as .npz
+                out_base = split_dir / utt  # save as .npz
 
                 if skip_existing and load_shape_if_exists(out_base) is not None:
                     shape = load_shape_if_exists(out_base)
@@ -377,7 +382,7 @@ def main():
                     n_ok += 1
 
                 except OSError as e:
-                    # Disk full on current out_root — try to switch root and continue
+                    # disk full on current out_root -> try to switch root and continue (this actually happened to me haha)
                     if "No space left on device" in str(e):
                         print("\n[warn] disk full; searching for alternative output location...")
                         alt_root = pick_out_root(need_bytes // 2)  # try again with smaller requirement

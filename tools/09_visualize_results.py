@@ -1,7 +1,26 @@
-#!/usr/bin/env python3
-# tools/09_visualize_results.py
-# Compare selected runs (GMM LFCC/MFCC, CNN LFCC/MFCC), make overlay ROC plots,
-# and print/save a tidy summary table. Press-and-run; flags let you pick runs.
+"""
+09_visualize_results.py
+
+Purpose:
+    To visualise ROC curves across all selected models on DEV and EVAL.
+
+Functionality:
+    - Automatically find or load specific run_tag directories
+    - Loading ROC CSV samples created in Step 05 and Step 07
+    - Generating overlay ROC plots (DEV and EVAL)
+    - Saving figures for use in reports and README
+
+Inputs:
+    results/models/*/<run_tag>/
+
+Outputs:
+    results/summary/roc_dev_overlay.png
+    results/summary/roc_eval_overlay.png
+
+Notes:
+    To compare model behaviour visually.
+"""
+
 
 from __future__ import annotations
 from pathlib import Path
@@ -86,7 +105,7 @@ def _gather_models(args):
             if (d / "metrics.json").exists():  # allow pointing directly at a run dir
                 models.append((label, d))
             else:
-                # also allow parent family folder (it will fallback to latest/newest)
+                # also allowing parent family folder (it will fallback to latest/newest)
                 resolved = _resolve_model_dir(d)
                 if resolved:
                     models.append((label, resolved))
@@ -128,7 +147,7 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
     ts = time.strftime("%Y%m%d-%H%M")
 
-    # Collect numbers + draw overlay ROCs
+    # collecting numbers + draw overlay ROCs
     summary_rows = []
     have_dev_roc = False
     have_eval_roc = False
@@ -144,14 +163,14 @@ def main():
         ev_fpr  = m.get("eval", {}).get("fpr", None)
         run_tag = run_dir.name
 
-        # op point (CSV wins if present)
+        # op point (CSV priority if present)
         op = _safe_op_csv(run_dir / "op_eval_at_dev_threshold.csv")
         if op:
             ev_acc = float(op.get("acc", ev_acc or 0.0))
             ev_tpr = float(op.get("tpr", ev_tpr or 0.0))
             ev_fpr = float(op.get("fpr", ev_fpr or 0.0))
             dev_thr = float(op.get("thr_dev", dev_thr or 0.0))
-            # prefer eval_eer in OP if present; otherwise keep metrics.json’s value
+            # prefers eval_eer in OP if present; otherwise keep metrics.json’s value
             try:
                 ev_eer = float(op.get("eval_eer", ev_eer))
             except Exception:
@@ -188,7 +207,7 @@ def main():
             "run_tag": run_tag
         })
 
-    # Save overlay plots
+    # Saving overlay plots
     if have_dev_roc:
         plt.figure(1)
         plt.plot([0,1],[0,1],"--", linewidth=1)
@@ -211,7 +230,7 @@ def main():
         plt.savefig(p, dpi=150, bbox_inches="tight")
         print(f"[plot] {p}")
 
-    # Print Markdown table
+    # printing Markdown table
     print("\n# Results (selected runs)\n")
     print("| Model | Feature | Run Tag | DEV EER | DEV THR | EVAL EER | EVAL ACC | EVAL TPR | EVAL FPR |")
     print("|---|---|---|---:|---:|---:|---:|---:|---:|")
@@ -228,7 +247,7 @@ def main():
             eval_fpr=_pretty_num(r["eval_fpr"], pct=True),
         ))
 
-    # Save combined CSV
+    # saving combined CSV
     csv_path = out_dir / f"summary_{ts}.csv"
     with csv_path.open("w", newline="") as f:
         w = csv.writer(f)
