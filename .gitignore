@@ -21,7 +21,7 @@ venv/
 # Ignore everything inside results by default
 results/*
 
-# But keep the results directory itself so unignore rules below work
+# Keep the results directory itself so negation rules work
 !results/
 
 # Keep manifests (CSV)
@@ -38,11 +38,9 @@ results/*
 !results/models/**/per_attack*.csv
 !results/models/**/run_config.json
 
-# Keep summary outputs (CSV + PNG + TEX)
-!results/summary/
-!results/summary/**/*.csv
-!results/summary/**/*.png
-!results/summary/**/*.tex
+# Ignore summary folder completely
+results/summary/
+results/summary/**
 
 # Ignore feature extraction (very large)
 results/features/
