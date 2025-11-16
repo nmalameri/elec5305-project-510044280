@@ -1,0 +1,20 @@
+{
+  "seed": 42,
+  "feature": "mfcc",
+  "run_tag": "K64_cap100_S6000_F800000_20251116-1649",
+  "n_components": 64,
+  "cap_frames_per_utt": 100,
+  "max_spoof_utts": 6000,
+  "max_spoof_frames": 800000,
+  "em": {
+    "max_iter": 120,
+    "tol": 0.003,
+    "n_init": 1,
+    "cov_type": "diag",
+    "retry_regs": [
+      0.0001,
+      0.001,
+      0.01
+    ]
+  }
+}

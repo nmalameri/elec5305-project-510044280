@@ -1,0 +1,22 @@
+{
+  "feature": "mfcc",
+  "epochs": 15,
+  "batch_size": 32,
+  "T_crop": 400,
+  "max_spoof_utts": 6000,
+  "balance_attacks": true,
+  "dev": {
+    "eer": 0.14639164848683534,
+    "thr": -2.443451166152954
+  },
+  "eval": {
+    "eer": 0.2029873942675281,
+    "acc": 0.7635638783216587,
+    "tpr": 0.7537177921793307,
+    "fpr": 0.15091774303195105,
+    "bal_acc": 0.8014000245736899
+  },
+  "run_dir": "/Users/nasseralameri/Documents/GitHub/elec5305-project-510044280/results/models/cnn_mfcc/cnn_T400_E15_B32_S6000_BAL_20251116-1659",
+  "feature_root": "/Users/nasseralameri/Documents/GitHub/elec5305-project-510044280/results/features",
+  "device": "mps"
+}

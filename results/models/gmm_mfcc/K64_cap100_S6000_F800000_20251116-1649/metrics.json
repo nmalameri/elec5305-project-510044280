@@ -1,0 +1,19 @@
+{
+  "feature": "mfcc",
+  "train_frames": 857745,
+  "gmm_components_per_class": 64,
+  "cap_frames_per_utt": 100,
+  "dev": {
+    "eer": 0.0995604522342182,
+    "thr": -1.2820403575897217,
+    "acc": 0.9005393656416036
+  },
+  "eval": {
+    "eer": 0.12509531988693207,
+    "acc": 0.8411920771509188
+  },
+  "feature_root": "/Users/nasseralameri/Documents/GitHub/elec5305-project-510044280/results/features",
+  "model_dir": "/Users/nasseralameri/Documents/GitHub/elec5305-project-510044280/results/models/gmm_mfcc/K64_cap100_S6000_F800000_20251116-1649",
+  "run_tag": "K64_cap100_S6000_F800000_20251116-1649",
+  "finished_at": "2025-11-16T16:57:34"
+}

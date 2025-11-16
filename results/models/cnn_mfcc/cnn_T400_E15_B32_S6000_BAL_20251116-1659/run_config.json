@@ -1,0 +1,13 @@
+{
+  "feature": "mfcc",
+  "T_crop": 400,
+  "epochs": 15,
+  "batch_size": 32,
+  "lr": 0.002,
+  "weight_decay": 0.0001,
+  "max_spoof_utts": 6000,
+  "balance_attacks": true,
+  "seed": 42,
+  "device": "mps",
+  "feature_root": "/Users/nasseralameri/Documents/GitHub/elec5305-project-510044280/results/features"
+}

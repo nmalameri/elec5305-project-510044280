@@ -1,55 +1,53 @@
-cd "$HOME/Documents/GitHub/elec5305-project-510044280"
-
-rm -f .gitignore
-cat > .gitignore << 'EOF'
 # macOS junk
 .DS_Store
 
-# Python
+# Python bytecode
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-*.egg-info/
+
+# Virtual envs
 .venv/
+env/
 venv/
-.env
 
-# Jupyter
-.ipynb_checkpoints/
-
-# Editors/IDEs
+# IDEs
 .vscode/
 .idea/
 
-# Project outputs (large)
-results/
-figs/
-data/
-datasets/
-logs/
-checkpoints/
-models/
-**/*.npy
-**/*.npz
-**/*.pt
-**/*.joblib
-**/*.pkl
-**/*.ckpt
-**/*.wav
-**/*.flac
-**/*.png
-**/*.pdf
+#############################
+# RESULTS FOLDER MANAGEMENT
+#############################
 
-# Keep these tracked even if inside ignored dirs (adjust as you like)
-!configs/**
-!tools/**
-!figs/*.tex
-!README.md
-!LICENSE
-EOF
+# Ignore everything inside results by default
+results/*
 
-# Apply new rules to already tracked files:
-git rm -r --cached .
-git add .
-git commit -m "Refresh .gitignore and untrack large/generated files"
+# But keep the results directory itself so unignore rules below work
+!results/
+
+# Keep manifests (CSV)
+!results/manifests/
+!results/manifests/**/*.csv
+
+# Keep model result folders
+!results/models/
+!results/models/**/
+!results/models/**/metrics.json
+!results/models/**/model.pt
+!results/models/**/scores_*.csv
+!results/models/**/roc_*.csv
+!results/models/**/per_attack*.csv
+!results/models/**/run_config.json
+
+# Keep summary outputs (CSV + PNG + TEX)
+!results/summary/
+!results/summary/**/*.csv
+!results/summary/**/*.png
+!results/summary/**/*.tex
+
+# Ignore feature extraction (very large)
+results/features/
+results/features/**
+
+# Ignore temporary or partial files
+results/tmp/
+results/tmp/**
