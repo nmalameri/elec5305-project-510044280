@@ -23,32 +23,33 @@ The system achieves this through:
 ---
 
 # 2. Repository Structure
-'''
+```
 repo_root/
 │
 ├── configs/
-│     └── paths.yaml
+│   └── paths.yaml
 │
 ├── tools/
-│     ├── 01_verify_asvspoof.py
-│     ├── 02_build_manifest.py
-│     ├── 03_verify_manifest.py
-│     ├── 04_extract_features.py
-│     ├── 05_gmm.py
-│     ├── 06_gmm_plot_and_table.py
-│     ├── 07_cnn_baseline.py
-│     ├── 08_collect_results.py
-│     └── 09_visualize_results.py
+│   ├── 01_verify_asvspoof.py
+│   ├── 02_build_manifest.py
+│   ├── 03_verify_manifest.py
+│   ├── 04_extract_features.py
+│   ├── 05_gmm.py
+│   ├── 06_gmm_plot_and_table.py
+│   ├── 07_cnn_baseline.py
+│   ├── 08_collect_results.py
+│   └── 09_visualize_results.py
 │
 └── results/
-      ├── manifests/
-      ├── models/
-      │      ├── gmm_lfcc/
-      │      ├── gmm_mfcc/
-      │      ├── cnn_lfcc/
-      │      └── cnn_mfcc/
-      └── summary/
-'''
+    ├── manifests/
+    ├── models/
+    │   ├── gmm_lfcc/
+    │   ├── gmm_mfcc/
+    │   ├── cnn_lfcc/
+    │   └── cnn_mfcc/
+    └── summary/
+```
+
 ---
 
 # 3. Installation & Requirements
