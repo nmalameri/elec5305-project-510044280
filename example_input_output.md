@@ -1,6 +1,6 @@
 # Example Inference Results Across All Models
 
-This document presents two real input utterances from the ASVspoof 2019 Logical Access (LA) evaluation set — one spoof and one bona fide.  
+This document presents two real input utterances from the ASVspoof 2019 Logical Access (LA) evaluation set: one spoof and one bona fide.  
 Each utterance is evaluated by all four trained systems:
 
 - GMM_LFCC  
@@ -18,7 +18,7 @@ These examples concretely illustrate how the models behave on real ASVspoof inpu
 
 ---
 
-## 🔊 Example 1 — Spoof Utterance  
+## Example 1 — Spoof Utterance  
 **utt_id: `LA_E_3667402`**  
 Ground truth label: **spoof**
 
@@ -31,7 +31,7 @@ Ground truth label: **spoof**
 
 ---
 
-## 🔈 Example 2 — Bona Fide Utterance  
+## Example 2 — Bona Fide Utterance  
 **utt_id: `LA_E_6276020`**  
 Ground truth label: **bona fide**
 
@@ -44,7 +44,7 @@ Ground truth label: **bona fide**
 
 ---
 
-## 📘 Interpretation
+## Interpretation
 
 - **GMM models (LFCC & MFCC)**  
   - Correctly classify both spoof and bona fide examples.  
