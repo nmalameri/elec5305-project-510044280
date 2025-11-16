@@ -121,7 +121,7 @@ with (OUTDIR/"per_attack_eer_eval.md").open("w") as f:
         f.write("| "+aid+" | "+" | ".join(vals)+" |\n")
 print(f"[save] {OUTDIR/'per_attack_eer_eval.md'}")
 
-# --- Copy ROCs into figs/ (if PNGs are rendered already) ---
+# --- copy ROCs into figs/ (if PNGs are rendered already) ---
 for name, path in RUNS.items():
     if not path: continue
     rd = Path(path)

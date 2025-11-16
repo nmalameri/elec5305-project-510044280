@@ -178,9 +178,27 @@ results/summary/roc_eval_overlay.png
 
 ---
 
+## Step 8 — Run the Inference Demo (Optional)
+
+A demonstration script is provided to show how the trained models classify
+real evaluation utterances (one spoof and one bona fide). The script loads
+the saved scores and DEV thresholds and prints the predicted labels.
+
+Run the demo:
+
+python tools/10_demo_examples.py
+
+This script does not retrain models; it simply uses:
+- scores_eval.csv
+- metrics.json (DEV-set threshold)
+from each model directory and prints a clear inference breakdown.
+
+---
+
+
 # 6. Example Input & Output (End-to-End Demonstration)
 
-The folder:
+Building on Step 8, 10_demo_examples.py, the folder:
 results/models/<model>/<run_tag>/
 
 contains two files showing how the algorithm performs on every utterance:
