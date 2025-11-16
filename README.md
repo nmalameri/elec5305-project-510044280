@@ -23,7 +23,7 @@ The system achieves this through:
 ---
 
 # 2. Repository Structure
-
+'''
 repo_root/
 │
 ├── configs/
@@ -48,7 +48,7 @@ repo_root/
       │      ├── cnn_lfcc/
       │      └── cnn_mfcc/
       └── summary/
-
+'''
 ---
 
 # 3. Installation & Requirements
