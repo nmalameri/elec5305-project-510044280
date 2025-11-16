@@ -426,4 +426,6 @@ This project contributes:
 - Tools for plotting, per-attack tables, and summary results  
 - A clean CPU-friendly ASVspoof baseline for research/teaching  
 
+This project was built primarily from scratch, taking what the challenge documentation provided as motivation/inspiration and not starting code.  
+
 ---
