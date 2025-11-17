@@ -195,6 +195,32 @@ from each model directory and prints a clear inference breakdown.
 
 ---
 
+## Step 9 — Evaluate External Pretrained Baselines
+
+This project includes wrappers for evaluating pretrained anti-spoofing models:
+
+- RawNetLite (waveform CNN)
+- RawNet2 (waveform CNN + GRU)
+- AASIST-LA (graph attention network)
+
+These models can be evaluated independently using:
+
+python pretrained_models/rawnetlite/rawnetlite_infer.py  
+python pretrained_models/rawnet2/rawnet2_infer.py  
+python pretrained_models/aasist/aasist_infer.py  
+
+Each pretrained model outputs in its own run directory:
+
+- scores_dev.csv  
+- scores_eval.csv  
+- metrics.json  
+- run_config.json  
+
+These pretrained systems provide context for comparison with more complex architectures. Because the full original waveform preprocessing pipelines were not reproduced (e.g., pre-emphasis, sinc frontend, mel parameters), their performance here reflects naive pretrained usage rather than their published results.
+
+It is also important to note that these take a very long time on CPU and hence I had to complete it on a friend's PC for CUDA.
+
+---
 
 # 6. Example Input & Output (End-to-End Demonstration)
 
@@ -398,9 +424,41 @@ Key findings:
 - Attacks A17 & A19 are hardest  
 - LFCC better captures high-frequency artefacts  
 
+
+## Pretrained Baseline Exploration
+
+Pretrained versions of RawNetLite, RawNet2, and AASIST-LA were evaluated using the same DEV/EVAL protocol as the cepstral models. Since these models were not retrained on ASVspoof 2019 LA and their original preprocessing pipelines were not replicated, their performance represents out-of-domain inference. RawNet2 and AASIST-LA show score inversion effects and ROC curves below the random baseline, illustrating how sensitive raw-audio architectures are to frontend mismatch. Nevertheless, including them demonstrates that the framework can accommodate modern pretrained anti-spoofing models.
+
 ---
 
-# 8. Planned Future Extensions
+## 8. Combined Results Across All Models
+
+The summary script tools/11_collect_all_results.py aggregates headline metrics from all models and generates:
+
+- headline_all_models.csv  
+- headline_all_models.md  
+- roc_eval_all_models.png  
+
+These appear under results/summary/ and compare:
+
+- LFCC+GMM  
+- MFCC+GMM  
+- LFCC+CNN  
+- MFCC+CNN  
+- RawNetLite (pretrained)  
+- RawNet2 (pretrained)  
+- AASIST-LA (pretrained)
+
+Interpretation of the combined ROC:
+
+- LFCC+GMM remains the strongest overall model.  
+- CNN baselines generalise moderately with some degradation on EVAL.  
+- RawNetLite, RawNet2, and AASIST-LA underperform due to domain and preprocessing mismatch.  
+- Their inclusion demonstrates that the framework can integrate and evaluate state-of-the-art pretrained models.
+
+---
+
+# 9. Planned Future Extensions
 
 - RawNet2  
 - RawNetLite  
@@ -408,7 +466,7 @@ Key findings:
 
 ---
 
-# 9. Reproducibility
+# 10. Reproducibility
 
 Every run creates a full directory under results/models/<model>/<tag>/ including:
 run_config.json  
@@ -432,7 +490,7 @@ python tools/09_visualize_results.py
 
 ---
 
-# 10. Contributions
+# 11. Contributions
 
 This project contributes:
 
@@ -445,5 +503,12 @@ This project contributes:
 - A clean CPU-friendly ASVspoof baseline for research/teaching  
 
 This project was built primarily from scratch, taking what the challenge documentation provided as motivation/inspiration and not starting code.  
+
+### Additional Contributions (Pretrained Models)
+
+- Added inference wrappers for RawNetLite, RawNet2, and AASIST-LA.  
+- Added a standalone per-attack evaluation tool compatible with any model producing standard ASVspoof-style score CSVs.  
+- Added a unified aggregator script (tools/11_collect_all_results.py) to produce combined ROC and headline summaries.  
+- Analysed the effect of preprocessing and domain mismatch on pretrained model behaviour (e.g., RawNet2 and AASIST-LA ROC collapse).
 
 ---
