@@ -1,0 +1,12 @@
+{
+  "model_type": "rawnet2",
+  "checkpoint": "/Users/nasseralameri/Documents/GitHub/elec5305-project-510044280/pretrained_models/rawnet2/models/pre_trained_DF_RawNet2.pth",
+  "config": "/Users/nasseralameri/Documents/GitHub/elec5305-project-510044280/pretrained_models/rawnet2/model_config_RawNet.yaml",
+  "manifests_root": "/Users/nasseralameri/Documents/GitHub/elec5305-project-510044280/results/manifests",
+  "dev_csv": "dev.csv",
+  "eval_csv": "eval.csv",
+  "device": "cpu",
+  "run_tag": "rawnet2_pretrained_20251117-152902",
+  "run_dir": "/Users/nasseralameri/Documents/GitHub/elec5305-project-510044280/results/models/rawnet2/rawnet2_pretrained_20251117-152902",
+  "max_utt": null
+}
