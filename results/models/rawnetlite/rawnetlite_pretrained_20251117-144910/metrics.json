@@ -1,0 +1,16 @@
+{
+  "model_type": "rawnetlite",
+  "checkpoint": "C:\\Users\\Admin\\OneDrive\\Desktop\\elec5305-project-510044280-main\\pretrained_models\\rawnetlite\\models\\rawnet_lite.pt",
+  "dev": {
+    "eer": 0.3453163206161822,
+    "thr": 4.52953354397323e-05,
+    "acc": 0.6547254870391241
+  },
+  "eval": {
+    "eer": 0.22951033038885366,
+    "acc": 0.7821918385108863
+  },
+  "run_tag": "rawnetlite_pretrained_20251117-144910",
+  "model_dir": "C:\\Users\\Admin\\OneDrive\\Desktop\\elec5305-project-510044280-main\\results\\models\\rawnetlite\\rawnetlite_pretrained_20251117-144910",
+  "finished_at": "2025-11-17T15:07:06"
+}

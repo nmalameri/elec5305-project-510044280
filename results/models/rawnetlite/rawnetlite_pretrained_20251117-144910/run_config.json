@@ -1,0 +1,11 @@
+{
+  "model_type": "rawnetlite",
+  "checkpoint": "C:\\Users\\Admin\\OneDrive\\Desktop\\elec5305-project-510044280-main\\pretrained_models\\rawnetlite\\models\\rawnet_lite.pt",
+  "manifests_root": "C:\\Users\\Admin\\OneDrive\\Desktop\\elec5305-project-510044280-main\\results\\manifests",
+  "dev_csv": "dev.csv",
+  "eval_csv": "eval.csv",
+  "device": "cuda",
+  "run_tag": "rawnetlite_pretrained_20251117-144910",
+  "run_dir": "C:\\Users\\Admin\\OneDrive\\Desktop\\elec5305-project-510044280-main\\results\\models\\rawnetlite\\rawnetlite_pretrained_20251117-144910",
+  "max_utt": null
+}
