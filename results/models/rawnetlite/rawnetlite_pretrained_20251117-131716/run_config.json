@@ -1,0 +1,10 @@
+{
+  "model_type": "rawnetlite",
+  "checkpoint": "/Users/nasseralameri/Documents/GitHub/elec5305-project-510044280/pretrained_models/rawnetlite/models/rawnet_lite.pt",
+  "manifests_root": "/Users/nasseralameri/Documents/GitHub/elec5305-project-510044280/results/manifests",
+  "dev_csv": "dev.csv",
+  "eval_csv": "eval.csv",
+  "device": "mps",
+  "run_tag": "rawnetlite_pretrained_20251117-131716",
+  "run_dir": "/Users/nasseralameri/Documents/GitHub/elec5305-project-510044280/results/models/rawnetlite/rawnetlite_pretrained_20251117-131716"
+}
