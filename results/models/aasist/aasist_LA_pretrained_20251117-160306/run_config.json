@@ -1,0 +1,12 @@
+{
+  "model_type": "aasist-LA",
+  "checkpoint": "C:\\Users\\Admin\\OneDrive\\Desktop\\elec5305-project-510044280-main\\pretrained_models\\aasist\\AASIST-L.pth",
+  "conf": "C:\\Users\\Admin\\OneDrive\\Desktop\\elec5305-project-510044280-main\\pretrained_models\\aasist\\AASIST-L.conf",
+  "manifests_root": "C:\\Users\\Admin\\OneDrive\\Desktop\\elec5305-project-510044280-main\\results\\manifests",
+  "dev_csv": "dev.csv",
+  "eval_csv": "eval.csv",
+  "device": "cuda",
+  "run_tag": "aasist_LA_pretrained_20251117-160306",
+  "run_dir": "C:\\Users\\Admin\\OneDrive\\Desktop\\elec5305-project-510044280-main\\results\\models\\aasist\\aasist_LA_pretrained_20251117-160306",
+  "max_utt": null
+}

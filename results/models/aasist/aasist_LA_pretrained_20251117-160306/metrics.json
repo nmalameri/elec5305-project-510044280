@@ -1,0 +1,16 @@
+{
+  "model_type": "aasist-LA",
+  "checkpoint": "C:\\Users\\Admin\\OneDrive\\Desktop\\elec5305-project-510044280-main\\pretrained_models\\aasist\\AASIST-L.pth",
+  "dev": {
+    "eer": 0.6656275928438777,
+    "thr": -0.6995152235031128,
+    "acc": 0.3343664466269522
+  },
+  "eval": {
+    "eer": 0.6482855860751588,
+    "acc": 0.3560228532925306
+  },
+  "run_tag": "aasist_LA_pretrained_20251117-160306",
+  "model_dir": "C:\\Users\\Admin\\OneDrive\\Desktop\\elec5305-project-510044280-main\\results\\models\\aasist\\aasist_LA_pretrained_20251117-160306",
+  "finished_at": "2025-11-17T16:16:31"
+}
