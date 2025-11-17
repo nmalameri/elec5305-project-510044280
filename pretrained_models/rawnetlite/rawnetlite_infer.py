@@ -1,49 +1,23 @@
 """
 rawnetlite_infer.py
 
-Purpose:
-    Run inference with a pretrained RawNetLite model on the ASVspoof 2019 LA
-    DEV and EVAL splits, using the existing manifest CSVs and evaluation
-    protocol from the main project.
+Inference for RawNetLite using:
+    - RawNetLite.py from https://github.com/adipiz99/RawNetLite
+    - Pretrained weights rawnet_lite.pt
 
-    For each utterance, this script:
-        - loads the waveform from disk,
-        - applies RawNetLite-style preprocessing,
-        - forwards it through the pretrained RawNetLite model,
-        - obtains a scalar spoofing score,
-        - saves scores_dev.csv / scores_eval.csv with (utt_id, score, label_int),
-        - computes the DEV-set EER and decision threshold,
-        - applies that threshold to EVAL to compute EER and ACC,
-        - writes metrics.json in the same style as the existing models.
+Outputs (saved under results/models/rawnetlite/<run_tag>/):
+    - scores_dev.csv       # per-utterance scores for DEV
+    - scores_eval.csv      # per-utterance scores for EVAL
+    - metrics.json         # EER, threshold, and ACC for DEV/EVAL
+    - run_config.json      # configuration used for this inference run
 
-Usage (fast test on 200 files per split):
+FAST MODE:
+    python pretrained_models/rawnetlite/rawnetlite_infer.py --max_utt 200
 
-    python pretrained_models/rawnetlite/rawnetlite_infer.py \
-        --manifests_root results/manifests \
-        --dev_csv dev.csv \
-        --eval_csv eval.csv \
-        --checkpoint pretrained_models/rawnetlite/models/rawnet_lite.pt \
-        --out_dir results/models/rawnetlite \
-        --max_utt 200
-
-Usage (full run):
-
-    python pretrained_models/rawnetlite/rawnetlite_infer.py \
-        --manifests_root results/manifests \
-        --dev_csv dev.csv \
-        --eval_csv eval.csv \
-        --checkpoint pretrained_models/rawnetlite/models/rawnet_lite.pt \
-        --out_dir results/models/rawnetlite
-
-Notes:
-    - You MUST have:
-        RawNetLite.py
-        audio_preprocessor.py
-        models/rawnet_lite.pt
-      under pretrained_models/rawnetlite/.
-    - Some details (model instantiation, preprocessing call) may need small
-      local adjustments depending on the exact RawNetLite repo API.
+FULL RUN:
+    python pretrained_models/rawnetlite/rawnetlite_infer.py
 """
+
 
 import argparse
 import csv
@@ -58,14 +32,13 @@ import torch
 import torchaudio
 import soundfile as sf # For CUDA implementation
 
-# Adjust these imports to match the actual names in your RawNetLite repo
-from RawNetLite import RawNetLite  # type: ignore
-import audio_preprocessor  # type: ignore
+from RawNetLite import RawNetLite 
+import audio_preprocessor
 
 
-# ---------------------------------------------------------------------------
+# ----------------
 # Data structures
-# ---------------------------------------------------------------------------
+# ----------------
 
 @dataclass
 class ScoreEntry:
@@ -74,13 +47,13 @@ class ScoreEntry:
     label_int: int
 
 
-# ---------------------------------------------------------------------------
+# -------------------
 # EER / ROC utilities
-# ---------------------------------------------------------------------------
+# -------------------
 
 def compute_roc(scores: np.ndarray, labels: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    Compute ROC curve and thresholds.
+    Computing ROC curve and thresholds.
 
     Args:
         scores: shape [N], higher = more spoof-like
@@ -89,7 +62,7 @@ def compute_roc(scores: np.ndarray, labels: np.ndarray) -> Tuple[np.ndarray, np.
     Returns:
         fprs, tprs, thresholds
     """
-    # Sort scores descending
+    # sorting scores descending
     desc_idx = np.argsort(-scores)
     scores_sorted = scores[desc_idx]
     labels_sorted = labels[desc_idx]
@@ -131,7 +104,7 @@ def compute_roc(scores: np.ndarray, labels: np.ndarray) -> Tuple[np.ndarray, np.
 
 def compute_eer(scores: np.ndarray, labels: np.ndarray) -> Tuple[float, float]:
     """
-    Compute Equal Error Rate (EER) and threshold.
+    Computing Equal Error Rate (EER) and threshold.
     EER is the point where FPR ~= FNR, searched along the ROC curve.
     """
     fprs, tprs, thresholds = compute_roc(scores, labels)
@@ -145,7 +118,7 @@ def compute_eer(scores: np.ndarray, labels: np.ndarray) -> Tuple[float, float]:
 
 def compute_acc(scores: np.ndarray, labels: np.ndarray, thr: float) -> float:
     """
-    Compute accuracy at a given threshold.
+    Computing accuracy at a given threshold.
 
     score > thr -> spoof (1)
     score <= thr -> bona fide (0)
@@ -155,24 +128,23 @@ def compute_acc(scores: np.ndarray, labels: np.ndarray, thr: float) -> float:
     return float(correct) / len(labels) if len(labels) > 0 else 0.0
 
 
-# ---------------------------------------------------------------------------
+# ------------------------------
 # Audio loading / preprocessing
-# ---------------------------------------------------------------------------
+# ------------------------------
 
 # For CUDA:
 def load_waveform(path: str, target_sr: int = 16000) -> torch.Tensor:
     """
-    Load waveform from disk as mono, resample to target_sr if needed.
+    Loading waveform from disk as mono, resample to target_sr if needed.
 
-    Uses soundfile for broad format support (FLAC, WAV) and torchaudio
-    only for resampling.
+    Using soundfile for broad format support (FLAC, WAV) and torchaudio only for resampling.
     """
     wav_np, sr = sf.read(path)  # wav_np: [T] or [T, C]
     if wav_np.ndim == 1:
         wav_np = wav_np[None, :]  # [1, T]
     else:
         wav_np = wav_np.T  # [C, T]
-        wav_np = wav_np.mean(axis=0, keepdims=True)  # convert to mono [1, T]
+        wav_np = wav_np.mean(axis=0, keepdims=True)  # converting to mono [1, T]
 
     wav = torch.from_numpy(wav_np.astype(np.float32))  # [1, T]
 
@@ -182,14 +154,8 @@ def load_waveform(path: str, target_sr: int = 16000) -> torch.Tensor:
     return wav
 
 
-# FOR MAC/ CPU
+# FOR MAC/ CPU ONLY
 # def load_waveform(path: str, target_sr: int = 16000) -> torch.Tensor:
-#     """
-#     Load waveform from disk, convert to mono, resample to target_sr if needed.
-
-#     Returns:
-#         Tensor of shape [1, T] (mono).
-#     """
 #     wav, sr = torchaudio.load(path)  # [C, T]
 #     if wav.shape[0] > 1:
 #         wav = wav.mean(dim=0, keepdim=True)
@@ -200,16 +166,8 @@ def load_waveform(path: str, target_sr: int = 16000) -> torch.Tensor:
 
 def preprocess_waveform_for_rawnetlite(wav: torch.Tensor, sr: int = 16000) -> torch.Tensor:
     """
-    Apply RawNetLite-style preprocessing.
-
-    This is a wrapper around whatever logic is in audio_preprocessor.py.
-    If that module exposes a specific API (e.g., preprocess(wav, sr)),
-    you should call that here instead of the simple normalisation below.
+    Applying RawNetLite-style preprocessing.
     """
-    # --- Replace this with the exact audio_preprocessor logic if needed ---
-    # Example:
-    #   wav = audio_preprocessor.preprocess(wav, sr)
-    # For now, use simple mean-variance normalisation per utterance.
     with torch.no_grad():
         mean = wav.mean()
         std = wav.std()
@@ -220,29 +178,22 @@ def preprocess_waveform_for_rawnetlite(wav: torch.Tensor, sr: int = 16000) -> to
     return wav
 
 
-# ---------------------------------------------------------------------------
+# --------------------------
 # RawNetLite model loading
-# ---------------------------------------------------------------------------
+# --------------------------
 
 def load_rawnetlite_model(checkpoint_path: str, device: torch.device) -> torch.nn.Module:
     """
-    Load the pretrained RawNetLite model.
-
-    This function may need small tweaks depending on how the checkpoint
-    was saved in the RawNetLite repo:
-
-        - Sometimes checkpoint = torch.load(...); model = checkpoint['model']
-        - Sometimes it's saved as a plain state_dict.
-        - Sometimes the model definition is included inside the checkpoint.
+    Loading the pretrained RawNetLite model.
     """
     ckpt = torch.load(checkpoint_path, map_location=device)
 
-    # CASE 1: checkpoint is a plain state_dict
+    # checkpoint is a plain state_dict
     try:
         model = RawNetLite()
         model.load_state_dict(ckpt)
     except Exception:
-        # CASE 2: checkpoint is a dict with a 'model_state' or 'state_dict' key
+        # checkpoint is a dict with a 'model_state' or 'state_dict' key
         if isinstance(ckpt, dict):
             possible_keys = ["state_dict", "model_state", "model", "rawnet", "net"]
             state = None
@@ -267,9 +218,9 @@ def load_rawnetlite_model(checkpoint_path: str, device: torch.device) -> torch.n
     return model
 
 
-# ---------------------------------------------------------------------------
+# ---------------------------------------
 # Inference on one split (dev or eval)
-# ---------------------------------------------------------------------------
+# ---------------------------------------
 
 def run_split_inference(
     model: torch.nn.Module,
@@ -279,15 +230,7 @@ def run_split_inference(
     max_utt: Optional[int] = None,
 ) -> List[ScoreEntry]:
     """
-    Run RawNetLite inference for all utterances in a manifest CSV.
-
-    manifest_csv must have at least columns:
-        utt_id,label,path
-    where label is 'bonafide' or 'spoof'.
-
-    Outputs a scores CSV with:
-        utt_id,score,label_int
-    and returns a list of ScoreEntry.
+    Running RawNetLite inference for all utterances in a manifest CSV.
     """
     entries: List[ScoreEntry] = []
 
@@ -323,7 +266,7 @@ def run_split_inference(
 
             label_int = 1 if label_str == "spoof" else 0
 
-            # Load and preprocess audio
+            # loading and preprocess audio
             wav = load_waveform(path, target_sr=16000)      # [1, T]
             wav = preprocess_waveform_for_rawnetlite(wav)  # still [1, T]
             wav = wav.to(device)
@@ -335,11 +278,11 @@ def run_split_inference(
                 elif wav.dim() == 2:
                     batch = wav.unsqueeze(1)               # [1, 1, T]
                 elif wav.dim() == 3:
-                    batch = wav                            # assume [B, 1, T]
+                    batch = wav                            # assuming [B, 1, T]
                 else:
                     raise RuntimeError(f"Unexpected waveform shape: {wav.shape}")
 
-                logits = model(batch)  # expected [B, 1] or [B]
+                logits = model(batch)  # expecting [B, 1] or [B]
                 if isinstance(logits, (list, tuple)):
                     logits = logits[0]
                 if logits.dim() == 2 and logits.size(1) == 1:
@@ -348,7 +291,7 @@ def run_split_inference(
 
             entries.append(ScoreEntry(utt_id=utt_id, score=score, label_int=label_int))
 
-    # Write scores CSV
+    # writing scores CSV
     with open(out_scores_csv, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["utt_id", "score", "label_int"])
@@ -359,9 +302,9 @@ def run_split_inference(
     return entries
 
 
-# ---------------------------------------------------------------------------
+# --------------
 # Main script
-# ---------------------------------------------------------------------------
+# --------------
 
 def main():
     parser = argparse.ArgumentParser(description="RawNetLite inference on ASVspoof 2019 LA")
@@ -410,7 +353,7 @@ def main():
     )
     args = parser.parse_args()
 
-    # Device selection: use CUDA if available, otherwise CPU (avoid MPS)
+    # CUDA if available, otherwise CPU (avoiding MPS)
     if torch.cuda.is_available():
         device = torch.device("cuda")
     else:
@@ -427,7 +370,7 @@ def main():
     run_dir = os.path.join(args.out_dir, run_tag)
     os.makedirs(run_dir, exist_ok=True)
 
-    # Save a minimal run_config.json
+    # saving a minimal run_config.json
     run_config = {
         "model_type": "rawnetlite",
         "checkpoint": os.path.abspath(args.checkpoint),
@@ -442,7 +385,7 @@ def main():
     with open(os.path.join(run_dir, "run_config.json"), "w") as f:
         json.dump(run_config, f, indent=2)
 
-    # Load model
+    # loading model
     print(f"Loading RawNetLite from {args.checkpoint} on device {device} ...")
     model = load_rawnetlite_model(args.checkpoint, device)
 
@@ -450,7 +393,7 @@ def main():
     dev_manifest = os.path.join(args.manifests_root, args.dev_csv)
     eval_manifest = os.path.join(args.manifests_root, args.eval_csv)
 
-    # Run inference on DEV
+    # running inference on DEV
     print(f"\nRunning DEV inference using manifest: {dev_manifest}")
     dev_scores = run_split_inference(
         model=model,
@@ -462,12 +405,12 @@ def main():
     dev_scores_arr = np.array([e.score for e in dev_scores], dtype=np.float64)
     dev_labels_arr = np.array([e.label_int for e in dev_scores], dtype=np.int32)
 
-    # Compute DEV EER and threshold
+    # computing DEV EER and threshold
     dev_eer, dev_thr = compute_eer(dev_scores_arr, dev_labels_arr)
     dev_acc = compute_acc(dev_scores_arr, dev_labels_arr, dev_thr)
     print(f"\nDEV EER: {dev_eer*100:.2f}% at threshold {dev_thr:.6f}, ACC: {dev_acc*100:.2f}%")
 
-    # Run inference on EVAL
+    # running inference on EVAL
     print(f"\nRunning EVAL inference using manifest: {eval_manifest}")
     eval_scores = run_split_inference(
         model=model,
@@ -479,12 +422,12 @@ def main():
     eval_scores_arr = np.array([e.score for e in eval_scores], dtype=np.float64)
     eval_labels_arr = np.array([e.label_int for e in eval_scores], dtype=np.int32)
 
-    # Compute EVAL EER at DEV threshold
+    # computing EVAL EER at DEV threshold
     eval_eer, _ = compute_eer(eval_scores_arr, eval_labels_arr)
     eval_acc = compute_acc(eval_scores_arr, eval_labels_arr, dev_thr)
     print(f"\nEVAL EER: {eval_eer*100:.2f}%, ACC at DEV threshold: {eval_acc*100:.2f}%")
 
-    # Write metrics.json in the same style as your other models
+    # writing metrics.json
     metrics = {
         "model_type": "rawnetlite",
         "checkpoint": os.path.abspath(args.checkpoint),

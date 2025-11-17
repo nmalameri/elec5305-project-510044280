@@ -1,10 +1,10 @@
 """
 aasist_infer.py
 
-Inference script for pretrained AASIST-L (Logical Access) on ASVspoof 2019 LA.
+Inference script for pretrained AASIST-L (Logical Access)
 
 Inputs:
-    - pretrained_models/aasist/AASIST.py
+    - pretrained_models/aasist/AASIST.py from https://github.com/clovaai/aasist/tree/main
     - pretrained_models/aasist/AASIST-L.pth
     - pretrained_models/aasist/AASIST-L.conf
     - results/manifests/dev.csv
@@ -16,7 +16,7 @@ Outputs (under results/models/aasist/<run_tag>/):
     - metrics.json
     - run_config.json
 
-Supports FAST MODE via:
+FAST MODE if computationally expensive via:
     --max_utt 200
 """
 
@@ -31,22 +31,22 @@ import soundfile as sf
 import torch
 import torchaudio
 
-# Import AASIST model
-from AASIST import Model  # YOUR architecture file
+# importing AASIST model
+from AASIST import Model  # architecture file
 
 
-# ------------------------------------------------------------
-# Load AASIST-L.conf
-# ------------------------------------------------------------
+# -----------------------
+# Loading AASIST-L.conf
+# -----------------------
 def load_conf(path):
     with open(path, "r") as f:
         conf = json.load(f)
     return conf["model_config"]
 
 
-# ------------------------------------------------------------
-# Audio loading (safe for mac/windows/linux)
-# ------------------------------------------------------------
+# ---------------
+# Audio loading 
+# ---------------
 def load_waveform(path, target_sr=16000):
     wav_np, sr = sf.read(path)
     if wav_np.ndim == 1:
@@ -63,11 +63,11 @@ def load_waveform(path, target_sr=16000):
     return wav  # [1, T]
 
 
-# ------------------------------------------------------------
-# Preprocess audio for AASIST
+# --------------------------------
+# Preprocessing audio for AASIST
 # - pad/crop to nb_samp
 # - mean-variance normalize
-# ------------------------------------------------------------
+# --------------------------------
 def preprocess_aasist(wav, nb_samp):
     wav = wav.squeeze(0)  # [T]
     T = wav.shape[0]
@@ -86,9 +86,9 @@ def preprocess_aasist(wav, nb_samp):
     return wav.unsqueeze(0)  # [1, nb_samp]
 
 
-# ------------------------------------------------------------
-# EER utilities
-# ------------------------------------------------------------
+# ------------
+# EER 
+# ------------
 def compute_roc(scores, labels):
     idx = np.argsort(-scores)
     s = scores[idx]
@@ -128,7 +128,7 @@ def compute_acc(scores, labels, thr):
 
 
 # ------------------------------------------------------------
-# Run inference for one split (dev or eval)
+# Running inference for one split at a time (dev or eval)
 # ------------------------------------------------------------
 def run_split(model, device, manifest_csv, out_csv, max_utt, nb_samp):
     os.makedirs(os.path.dirname(out_csv), exist_ok=True)
@@ -175,9 +175,9 @@ def run_split(model, device, manifest_csv, out_csv, max_utt, nb_samp):
     return entries
 
 
-# ------------------------------------------------------------
+# ---------
 # Main
-# ------------------------------------------------------------
+# ---------
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifests_root", type=str, default="results/manifests")
@@ -193,11 +193,11 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    # load conf
+    # loading conf
     cfg = load_conf(args.conf)
     nb_samp = cfg["nb_samp"]
 
-    # prepare run dir
+    # preparing run dir
     if args.run_tag is None:
         run_tag = f"aasist_LA_pretrained_{datetime.now().strftime('%Y%m%d-%H%M%S')}"
     else:
@@ -206,7 +206,7 @@ def main():
     run_dir = os.path.join(args.out_dir, run_tag)
     os.makedirs(run_dir, exist_ok=True)
 
-    # save run_config.json
+    # saving run_config.json
     run_config = {
         "model_type": "aasist-LA",
         "checkpoint": os.path.abspath(args.checkpoint),
@@ -222,7 +222,7 @@ def main():
     with open(os.path.join(run_dir, "run_config.json"), "w") as f:
         json.dump(run_config, f, indent=2)
 
-    # load model
+    # loading model
     print("Loading AASIST-L model...")
     model = Model(cfg).to(device)
     ckpt = torch.load(args.checkpoint, map_location=device)

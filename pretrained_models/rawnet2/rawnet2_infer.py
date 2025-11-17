@@ -2,11 +2,11 @@
 rawnet2_infer.py
 
 Inference for RawNet2 using:
-    - model.py (RawNet class)
+    - model.py (RawNet class) from https://github.com/asvspoof-challenge/2021/tree/main/LA/Baseline-RawNet2
     - model_config_RawNet.yaml
-    - pre_trained_DF_RawNet2.pth
+    - pre_trained_DF_RawNet2.pth from https://www.asvspoof.org/asvspoof2021/pre_trained_DF_RawNet2.zip
 
-Outputs (same as your GMM/CNN runs):
+Outputs:
     - scores_dev.csv
     - scores_eval.csv
     - metrics.json
@@ -30,16 +30,16 @@ import soundfile as sf
 from datetime import datetime
 from typing import List, Tuple
 
-# Import RawNet from model.py
+# importing RawNet from model.py
 from model import RawNet
 
 
-# ----------------------------------------------------------------------
-# Utility: Load YAML-like config (simple key:value parser)
-# ----------------------------------------------------------------------
+# -------------------------
+# Loading YAML config 
+# -------------------------
 def load_yaml_config(path):
     """
-    Minimal YAML parser for your config file.
+    Minimal YAML parser for config file.
     Only handles simple key:value and list entries.
     """
     import yaml
@@ -48,12 +48,12 @@ def load_yaml_config(path):
     return cfg["model"]
 
 
-# ----------------------------------------------------------------------
-# Audio loading (safe for Mac/Win/Linux)
-# ----------------------------------------------------------------------
+# ----------------
+# Audio loading
+# ----------------
 def load_waveform(path, target_sr=16000):
     """
-    Load audio using soundfile (works with FLAC/WAV on all OS).
+    Loading audio using soundfile (works with FLAC/WAV on all OS because I faced issues on running this on conda prior).
     Returns mono waveform [1, T].
     """
     wav_np, sr = sf.read(path)
@@ -71,9 +71,9 @@ def load_waveform(path, target_sr=16000):
     return wav  # [1, T]
 
 
-# ----------------------------------------------------------------------
-# Preprocess RawNet2 waveform
-# ----------------------------------------------------------------------
+# ---------------------------------
+# Preprocessing RawNet2 waveform
+# ---------------------------------
 def preprocess_rawnet2(wav, nb_samp):
     """
     RawNet2 requires:
@@ -98,9 +98,9 @@ def preprocess_rawnet2(wav, nb_samp):
     return wav.unsqueeze(0)       # [1, T]
 
 
-# ----------------------------------------------------------------------
+# --------------------
 # EER / ROC helpers
-# ----------------------------------------------------------------------
+# --------------------
 def compute_roc(scores, labels):
     idx = np.argsort(-scores)
     s = scores[idx]
@@ -139,9 +139,9 @@ def compute_acc(scores, labels, thr):
     return float((preds == labels).sum() / len(labels))
 
 
-# ----------------------------------------------------------------------
+# -----------------------
 # Inference on one split
-# ----------------------------------------------------------------------
+# -----------------------
 def run_split(
     model,
     device,
@@ -151,7 +151,7 @@ def run_split(
     nb_samp
 ):
     """
-    Process DEV or EVAL split.
+    Processing DEV or EVAL split.
     Writes scores CSV:
         utt_id,score,label_int
     """
@@ -182,12 +182,12 @@ def run_split(
             label_int = 1 if label_str == "spoof" else 0
             path = row["path"]
 
-            # Load + preprocess
+            # load + preprocess
             wav = load_waveform(path)
             wav = preprocess_rawnet2(wav, nb_samp)
             wav = wav.to(device)
 
-            # Forward pass
+            # forward pass
             with torch.no_grad():
                 out = model(wav)       # [1, 2] log-softmax
                 # spoof = class index 1
@@ -200,9 +200,9 @@ def run_split(
     return entries
 
 
-# ----------------------------------------------------------------------
+# -----
 # Main
-# ----------------------------------------------------------------------
+# -----
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifests_root", type=str, default="results/manifests")
@@ -227,15 +227,15 @@ def main():
     parser.add_argument("--max_utt", type=int, default=None)
     args = parser.parse_args()
 
-    # Device (CUDA → CPU)
+    # device (CUDA or CPU), MPS does not work
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    # Load config
+    # loading config
     cfg = load_yaml_config(args.config)
     nb_samp = cfg["nb_samp"]
 
-    # Prepare run dir
+    # preparing run dir
     if args.run_tag is None:
         run_tag = f"rawnet2_pretrained_{datetime.now().strftime('%Y%m%d-%H%M%S')}"
     else:
@@ -244,7 +244,7 @@ def main():
     run_dir = os.path.join(args.out_dir, run_tag)
     os.makedirs(run_dir, exist_ok=True)
 
-    # Save run_config.json
+    # saving run_config.json
     run_config = {
         "model_type": "rawnet2",
         "checkpoint": os.path.abspath(args.checkpoint),
@@ -260,16 +260,16 @@ def main():
     with open(os.path.join(run_dir, "run_config.json"), "w") as f:
         json.dump(run_config, f, indent=2)
 
-    # Load model
+    # loading model
     print("Loading RawNet2 model...")
     model = RawNet(cfg, device=device).to(device)
 
     ckpt = torch.load(args.checkpoint, map_location=device)
-    # Try simple load
+    # trying simple load
     try:
         model.load_state_dict(ckpt)
     except:
-        # Try common dict keys
+        # trying common dict keys
         possible_keys = ["state_dict", "model_state", "model", "rawnet", "net"]
         loaded = False
         for k in possible_keys:
@@ -283,7 +283,7 @@ def main():
     model.eval()
     print("Model loaded.")
 
-    # Paths
+    # paths
     dev_manifest = os.path.join(args.manifests_root, args.dev_csv)
     eval_manifest = os.path.join(args.manifests_root, args.eval_csv)
 
@@ -325,7 +325,7 @@ def main():
 
     print(f"EVAL EER: {eval_eer*100:.2f}%, acc@dev_thr={eval_acc*100:.2f}%")
 
-    # Write metrics.json
+    # writing metrics.json
     metrics = {
         "model_type": "rawnet2",
         "checkpoint": os.path.abspath(args.checkpoint),
