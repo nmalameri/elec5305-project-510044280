@@ -56,6 +56,7 @@ from typing import List, Tuple, Optional
 import numpy as np
 import torch
 import torchaudio
+import soundfile as sf # For CUDA implementation
 
 # Adjust these imports to match the actual names in your RawNetLite repo
 from RawNetLite import RawNetLite  # type: ignore
@@ -158,19 +159,43 @@ def compute_acc(scores: np.ndarray, labels: np.ndarray, thr: float) -> float:
 # Audio loading / preprocessing
 # ---------------------------------------------------------------------------
 
+# For CUDA:
 def load_waveform(path: str, target_sr: int = 16000) -> torch.Tensor:
     """
-    Load waveform from disk, convert to mono, resample to target_sr if needed.
+    Load waveform from disk as mono, resample to target_sr if needed.
 
-    Returns:
-        Tensor of shape [1, T] (mono).
+    Uses soundfile for broad format support (FLAC, WAV) and torchaudio
+    only for resampling.
     """
-    wav, sr = torchaudio.load(path)  # [C, T]
-    if wav.shape[0] > 1:
-        wav = wav.mean(dim=0, keepdim=True)
+    wav_np, sr = sf.read(path)  # wav_np: [T] or [T, C]
+    if wav_np.ndim == 1:
+        wav_np = wav_np[None, :]  # [1, T]
+    else:
+        wav_np = wav_np.T  # [C, T]
+        wav_np = wav_np.mean(axis=0, keepdims=True)  # convert to mono [1, T]
+
+    wav = torch.from_numpy(wav_np.astype(np.float32))  # [1, T]
+
     if sr != target_sr:
         wav = torchaudio.functional.resample(wav, sr, target_sr)
+
     return wav
+
+
+# FOR MAC/ CPU
+# def load_waveform(path: str, target_sr: int = 16000) -> torch.Tensor:
+#     """
+#     Load waveform from disk, convert to mono, resample to target_sr if needed.
+
+#     Returns:
+#         Tensor of shape [1, T] (mono).
+#     """
+#     wav, sr = torchaudio.load(path)  # [C, T]
+#     if wav.shape[0] > 1:
+#         wav = wav.mean(dim=0, keepdim=True)
+#     if sr != target_sr:
+#         wav = torchaudio.functional.resample(wav, sr, target_sr)
+#     return wav
 
 
 def preprocess_waveform_for_rawnetlite(wav: torch.Tensor, sr: int = 16000) -> torch.Tensor:
