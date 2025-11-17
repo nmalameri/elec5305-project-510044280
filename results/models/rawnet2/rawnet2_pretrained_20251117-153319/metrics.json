@@ -1,0 +1,16 @@
+{
+  "model_type": "rawnet2",
+  "checkpoint": "C:\\Users\\Admin\\OneDrive\\Desktop\\elec5305-project-510044280-main\\pretrained_models\\rawnet2\\models\\pre_trained_DF_RawNet2.pth",
+  "dev": {
+    "eer": 0.7904173489384161,
+    "thr": -1.096895456314087,
+    "acc": 0.20958782804701337
+  },
+  "eval": {
+    "eer": 0.686877737975892,
+    "acc": 0.32831253421676937
+  },
+  "run_tag": "rawnet2_pretrained_20251117-153319",
+  "model_dir": "C:\\Users\\Admin\\OneDrive\\Desktop\\elec5305-project-510044280-main\\results\\models\\rawnet2\\rawnet2_pretrained_20251117-153319",
+  "finished_at": "2025-11-17T15:57:46"
+}

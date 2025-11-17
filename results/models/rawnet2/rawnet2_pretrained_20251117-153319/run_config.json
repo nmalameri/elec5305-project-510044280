@@ -1,0 +1,12 @@
+{
+  "model_type": "rawnet2",
+  "checkpoint": "C:\\Users\\Admin\\OneDrive\\Desktop\\elec5305-project-510044280-main\\pretrained_models\\rawnet2\\models\\pre_trained_DF_RawNet2.pth",
+  "config": "C:\\Users\\Admin\\OneDrive\\Desktop\\elec5305-project-510044280-main\\pretrained_models\\rawnet2\\model_config_RawNet.yaml",
+  "manifests_root": "C:\\Users\\Admin\\OneDrive\\Desktop\\elec5305-project-510044280-main\\results\\manifests",
+  "dev_csv": "dev.csv",
+  "eval_csv": "eval.csv",
+  "device": "cuda",
+  "run_tag": "rawnet2_pretrained_20251117-153319",
+  "run_dir": "C:\\Users\\Admin\\OneDrive\\Desktop\\elec5305-project-510044280-main\\results\\models\\rawnet2\\rawnet2_pretrained_20251117-153319",
+  "max_utt": null
+}
