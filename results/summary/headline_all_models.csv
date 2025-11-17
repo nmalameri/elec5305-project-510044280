@@ -1,0 +1,8 @@
+model,dev_eer_percent,dev_acc_percent,eval_eer_percent,eval_acc_percent,run_dir
+GMM_LFCC,0.5707,99.41,9.5705,77.83,results/models/gmm_lfcc/K64_cap100_S6000_F800000_20251116-1640
+GMM_MFCC,9.9560,90.05,12.5095,84.12,results/models/gmm_mfcc/K64_cap100_S6000_F800000_20251116-1649
+CNN_LFCC,0.0331,nan,12.7793,63.67,results/models/cnn_lfcc/cnn_T400_E15_B32_S6000_BAL_20251116-1823
+CNN_MFCC,14.6392,nan,20.2987,76.36,results/models/cnn_mfcc/cnn_T400_E15_B32_S6000_BAL_20251116-1659
+RawNetLite,34.5316,65.47,22.9510,78.22,results/models/rawnetlite/rawnetlite_pretrained_20251117-144910
+RawNet2,79.0417,20.96,68.6878,32.83,results/models/rawnet2/rawnet2_pretrained_20251117-153319
+AASIST_LA,66.5628,33.44,64.8286,35.60,results/models/aasist/aasist_LA_pretrained_20251117-160306

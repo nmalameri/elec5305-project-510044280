@@ -18,34 +18,65 @@ venv/
 # RESULTS FOLDER MANAGEMENT
 #############################
 
-# Ignore everything inside results by default
+# Ignore everything under results/
 results/*
 
-# Keep the results directory itself so negation rules work
+# --- UNIGNORE results folder so deeper negations work ---
 !results/
 
-# Keep manifests (CSV)
+################################
+# KEEP MANIFESTS
+################################
 !results/manifests/
 !results/manifests/**/*.csv
 
-# Keep model result folders
+################################
+# KEEP MODEL OUTPUTS
+################################
 !results/models/
 !results/models/**/
+
+# Keep important small model files
 !results/models/**/metrics.json
-!results/models/**/model.pt
+!results/models/**/run_config.json
 !results/models/**/scores_*.csv
 !results/models/**/roc_*.csv
 !results/models/**/per_attack*.csv
-!results/models/**/run_config.json
+!results/models/**/model.pt      # For CNN models (small)
+!results/models/**/model.pth     # If present
 
-# Ignore summary folder completely
-results/summary/
+################################
+# SUMMARY FOLDER (KEEP SUMMARY)
+################################
+
+# First ignore summary fully
+results/summary/*
 results/summary/**
 
-# Ignore feature extraction (very large)
+# Then unignore summary folder
+!results/summary/
+
+# Then unignore specific output file types
+!results/summary/*.csv
+!results/summary/*.md
+!results/summary/*.png
+!results/summary/*.tex
+
+################################
+# IGNORE HEAVY DIRECTORIES
+################################
+
+# Ignore feature extraction outputs (very large)
 results/features/
 results/features/**
 
-# Ignore temporary or partial files
+# Ignore temporary results
 results/tmp/
 results/tmp/**
+
+################################
+# AUDIO FILES (OPTIONAL IGNORE)
+################################
+# Uncomment if you don't want wav/flac committed:
+# *.wav
+# *.flac
